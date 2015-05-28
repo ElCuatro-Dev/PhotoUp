@@ -9,4 +9,7 @@
     </author>
     <content src="index.html" />
     <access origin="*" />
+	
+	<gap:plugin name="org.apache.cordova.camera" value="0.2.4" />
+	<gap:plugin name="org.apache.cordova.file" />
 </widget>
