@@ -1,108 +1,172 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
 <html>
   <head>
-    <title>Capture Photo</title>
-
-    <script type="text/javascript" charset="utf-8" src="phonegap.js"></script>
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no;" />
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <title>PhoneGap</title>
+    <style type="text/css">
+        div {border: 1px solid black;}
+        input {width: 100%;}
+    </style>
+    <script type="text/javascript" charset="utf-8" src="phonegap-1.1.0.js"></script>
     <script type="text/javascript" charset="utf-8">
+      
+    var deviceReady = false;
 
-    var pictureSource;   // picture source
-    var destinationType; // sets the format of returned value
+    /**
+     * Take picture with camera
+     */
+    function takePicture() {
+        navigator.camera.getPicture(
+            function(uri) {
+                var img = document.getElementById('camera_image');
+                img.style.visibility = "visible";
+                img.style.display = "block";
+                img.src = uri;
+                document.getElementById('camera_status').innerHTML = "Success";
+            },
+            function(e) {
+                console.log("Error getting picture: " + e);
+                document.getElementById('camera_status').innerHTML = "Error getting picture.";
+            },
+            { quality: 50, destinationType: navigator.camera.DestinationType.FILE_URI});
+    };
 
-    // Wait for device API libraries to load
-    //
-    document.addEventListener("deviceready",onDeviceReady,false);
+    /**
+     * Select picture from library
+     */
+    function selectPicture() {
+        navigator.camera.getPicture(
+            function(uri) {
+                var img = document.getElementById('camera_image');
+                img.style.visibility = "visible";
+                img.style.display = "block";
+                img.src = uri;
+                document.getElementById('camera_status').innerHTML = "Success";
+            },
+            function(e) {
+                console.log("Error getting picture: " + e);
+                document.getElementById('camera_status').innerHTML = "Error getting picture.";
+            },
+            { quality: 50, destinationType: navigator.camera.DestinationType.FILE_URI, sourceType: navigator.camera.PictureSourceType.PHOTOLIBRARY});
+    };
+    
+    /**
+     * Upload current picture
+     */
+    function uploadPicture() {
+    	
+    	// Get URI of picture to upload
+        var img = document.getElementById('camera_image');
+        var imageURI = img.src;
+        if (!imageURI || (img.style.display == "none")) {
+            document.getElementById('camera_status').innerHTML = "Take picture or select picture from library first.";
+            return;
+        }
+        
+        // Verify server has been entered
+        server = document.getElementById('serverUrl').value;
+        if (server) {
+        	
+            // Specify transfer options
+            var options = new FileUploadOptions();
+            options.fileKey="file";
+            options.fileName=imageURI.substr(imageURI.lastIndexOf('/')+1);
+            options.mimeType="image/jpeg";
+            options.chunkedMode = false;
 
-    // device APIs are available
-    //
-    function onDeviceReady() {
-        pictureSource=navigator.camera.PictureSourceType;
-        destinationType=navigator.camera.DestinationType;
+            // Transfer picture to server
+            var ft = new FileTransfer();
+            ft.upload(imageURI, server, function(r) {
+                document.getElementById('camera_status').innerHTML = "Upload successful: "+r.bytesSent+" bytes uploaded.";            	
+            }, function(error) {
+                document.getElementById('camera_status').innerHTML = "Upload failed: Code = "+error.code;            	
+            }, options);
+        }
     }
 
-    // Called when a photo is successfully retrieved
-    //
-    function onPhotoDataSuccess(imageData) {
-      // Uncomment to view the base64-encoded image data
-      // console.log(imageData);
+    /**
+     * View pictures uploaded to the server
+     */
+    function viewUploadedPictures() {
+    	
+    	// Get server URL
+        server = document.getElementById('serverUrl').value;
+        if (server) {
+        	
+            // Get HTML that lists all pictures on server using XHR	
+            var xmlhttp = new XMLHttpRequest();
 
-      // Get image handle
-      //
-      var smallImage = document.getElementById('smallImage');
+            // Callback function when XMLHttpRequest is ready
+            xmlhttp.onreadystatechange=function(){
+                if(xmlhttp.readyState === 4){
 
-      // Unhide image elements
-      //
-      smallImage.style.display = 'block';
+                    // HTML is returned, which has pictures to display
+                    if (xmlhttp.status === 200) {
+                    	document.getElementById('server_images').innerHTML = xmlhttp.responseText;
+                    }
 
-      // Show the captured photo
-      // The in-line CSS rules are used to resize the image
-      //
-      smallImage.src = "data:image/jpeg;base64," + imageData;
+                    // If error
+                    else {
+                    	document.getElementById('server_images').innerHTML = "Error retrieving pictures from server.";
+                    }
+                }
+            };
+            xmlhttp.open("GET", server , true);
+            xmlhttp.send();       	
+        }	
     }
-
-    // Called when a photo is successfully retrieved
-    //
-    function onPhotoURISuccess(imageURI) {
-      // Uncomment to view the image file URI
-      // console.log(imageURI);
-
-      // Get image handle
-      //
-      var largeImage = document.getElementById('largeImage');
-
-      // Unhide image elements
-      //
-      largeImage.style.display = 'block';
-
-      // Show the captured photo
-      // The in-line CSS rules are used to resize the image
-      //
-      largeImage.src = imageURI;
-	  
-	  var ft = new FileTransfer();
-      ft.upload(imageURI, "http:///services.dosclics.com.ar/app/cargar-ubicacion/upload.php", win, fail, options);
-
-    }
-
-    // A button will call this function
-    //
-    function capturePhoto() {
-      // Take picture using device camera and retrieve image as base64-encoded string
-      navigator.camera.getPicture(onPhotoDataSuccess, onFail, { quality: 50,
-        destinationType: destinationType.DATA_URL });
-    }
-
-    // A button will call this function
-    //
-    function capturePhotoEdit() {
-      // Take picture using device camera, allow edit, and retrieve image as base64-encoded string
-      navigator.camera.getPicture(onPhotoDataSuccess, onFail, { quality: 20, allowEdit: true,
-        destinationType: destinationType.DATA_URL });
-    }
-
-    // A button will call this function
-    //
-    function getPhoto(source) {
-      // Retrieve image file location from specified source
-      navigator.camera.getPicture(onPhotoURISuccess, onFail, { quality: 50,
-        destinationType: destinationType.FILE_URI,
-        sourceType: source });
-    }
-
-    // Called if something bad happens.
-    //
-    function onFail(message) {
-      alert('Failed because: ' + message);
+    
+    /**
+     * Function called when page has finished loading.
+     */
+    function init() {
+        document.addEventListener("deviceready", function() {deviceReady = true;}, false);
+        window.setTimeout(function() {
+            if (!deviceReady) {
+                alert("Error: PhoneGap did not initialize.  Demo will not run correctly.");
+            }
+        },2000);
     }
 
     </script>
+
   </head>
-  <body>
-    <button onclick="capturePhoto();">Capture Photo</button> <br>
-    <button onclick="capturePhotoEdit();">Capture Editable Photo</button> <br>
-    <button onclick="getPhoto(pictureSource.PHOTOLIBRARY);">From Photo Library</button><br>
-    <button onclick="getPhoto(pictureSource.SAVEDPHOTOALBUM);">From Photo Album</button><br>
-    <img style="display:none;width:60px;height:60px;" id="smallImage" src="" />
-    <img style="display:none;" id="largeImage" src="" />
+  <body onload="init();">
+    <h3>PhoneGap Camera Upload Demo</h3>
+    
+    <div>
+        <h3>Server URL for upload.php:</h3>
+        <input id="serverUrl" type="text" value="http://services.dosclics.com.ar/app/cargar-ubicacion/upload.php" />
+    </div>
+    <br/>
+
+	<!-- Camera -->
+	<div>
+		<h3>Camera:</h3>
+		<b>Status:</b> <span id="camera_status"></span><br>
+        <b>Image:</b> <img style="width:120px;visibility:hidden;display:none;" id="camera_image" src="" />
+	</div>
+        
+    <!-- Actions -->
+    <div>
+        <input type="button" onclick="takePicture();" value="Take Picture" /><br/>
+        <input type="button" onclick="selectPicture();" value="Select Picture from Library" /><br/>
+        <input type="button" onclick="uploadPicture();" value="Upload Picture" />
+    </div>
+    <br/>
+    
+    <!-- Server pictures -->
+    <div>
+        <h3>Server:</h3>
+        <b>Images on server:</b>
+        <div id="server_images"></div>
+    </div>
+
+    <!-- Actions -->
+    <div>
+        <input type="button" onclick="viewUploadedPictures();" value="View Uploaded Pictures" />
+    </div>
+    
   </body>
 </html>
