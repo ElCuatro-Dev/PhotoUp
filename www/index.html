@@ -1,7 +1,7 @@
 <html>
 <head>
     <title>Subida de fotos</title>
-    <script type="text/javascript" charset="utf-8" src="phonegap-1.2.0.js"></script>
+    <script type="text/javascript" charset="utf-8" src="phonegap.js"></script>
     <script type="text/javascript" charset="utf-8">
 
         // Esperar a que cargue PhoneGap
@@ -36,7 +36,7 @@
             options.chunkedMode = false;
          
             var ft = new FileTransfer();
-            ft.upload(imageURI,"http://miservidor.com/services/upload.php",
+            ft.upload(imageURI,"http://services.dosclics.com.ar/app/cargar-ubicacion/upload.php",
                function(){
                    console.log('imagen subida correctamente');
                },
